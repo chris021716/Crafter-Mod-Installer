@@ -1,0 +1,49 @@
+name: Build Crafter for macOS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller
+
+      - name: Build Crafter.app
+        run: |
+          python -m PyInstaller \
+            --clean \
+            --noconfirm \
+            --windowed \
+            --name Crafter \
+            crafter.py
+
+      - name: Create DMG
+        run: |
+          mkdir -p dmg
+          cp -R dist/Crafter.app dmg/
+          ln -s /Applications dmg/Applications
+          hdiutil create \
+            -volname "Crafter" \
+            -srcfolder dmg \
+            -ov \
+            -format UDZO \
+            Crafter-macOS.dmg
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: Crafter-macOS
+          path: Crafter-macOS.dmg
